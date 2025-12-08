@@ -1,0 +1,85 @@
+services:
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    build: ./requirements/mariadb
+    restart: always 
+    env_file:
+      - ../.env 
+    expose: 
+      - 3306 
+    volumes:
+      - DB_Volume:/var/lib/mysql
+    networks:
+      - docker-network
+    secrets:
+      - db_root_password
+      - db_password
+      - db_user
+
+  wordpress:
+    image: wordpress
+    container_name: wordpress
+    depends_on: 
+      - mariadb
+    build: ./requirements/wordpress
+    restart: always
+    env_file:
+      - ../.env
+    expose: 
+      - 9000 
+    volumes:
+      - WP_Volume:/var/www/html
+    networks:
+      - docker-network
+    secrets:
+      - db_password
+      - db_user
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    depends_on:
+     - wordpress
+    build: ./requirements/nginx
+    ports: 
+      - "443:443"
+    restart: always
+    env_file:
+      - ../.env
+    volumes:
+      - WP_Volume:/var/www/html
+      # [CORRECCIÓN APLICADA AQUÍ] Usar ${PWD} para la ruta absoluta del host
+      - ${PWD}/certs:/etc/ssl/certs:ro 
+    networks:
+      - docker-network
+
+# Definición de Volúmenes (Rutas mapeadas a /home/login/data)
+volumes:
+  WP_Volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/andefern/data/wordpress
+      o: bind
+
+  DB_Volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/andefern/data/mariadb
+      o: bind
+
+# Definición de la Red
+networks:
+  docker-network:
+    driver: bridge
+
+# DEFINICIÓN FINAL DE SECRETS
+secrets:
+  db_user:
+    file: ../secrets/db_user.txt
+  db_password:
+    file: ../secrets/db_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
