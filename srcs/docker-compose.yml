@@ -1,85 +1,104 @@
+# Docker Compose para orquestar los servicios de Inception: Nginx, WordPress y MariaDB.
+version: '3.8'
+
 services:
   mariadb:
-    image: mariadb
     container_name: mariadb
-    build: ./requirements/mariadb
-    restart: always 
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+    image: mariadb
+    # Carga variables de entorno NO sensibles (nombres de BD, usuarios, etc.)
     env_file:
-      - ../.env 
-    expose: 
-      - 3306 
-    volumes:
-      - DB_Volume:/var/lib/mysql
-    networks:
-      - docker-network
+      - .env
+    # Monta contraseñas desde archivos (Docker Secrets, más seguro)
     secrets:
       - db_root_password
       - db_password
-      - db_user
+    # Monta el volumen persistente
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+    restart: always
 
   wordpress:
-    image: wordpress
     container_name: wordpress
-    depends_on: 
-      - mariadb
-    build: ./requirements/wordpress
-    restart: always
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress
+    # Carga variables de entorno NO sensibles (URLs, DOMAIN_NAME, etc.)
     env_file:
-      - ../.env
-    expose: 
-      - 9000 
-    volumes:
-      - WP_Volume:/var/www/html
-    networks:
-      - docker-network
+      - .env
+    # Contraseñas necesarias para la instalación de WP
     secrets:
       - db_password
-      - db_user
+      - wp_admin_password
+      - wp_user_password
+    # Monta el volumen para los archivos de WordPress
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
+    # Dependencia: WordPress espera a que MariaDB esté listo
+    depends_on:
+      - mariadb
+    restart: always
 
   nginx:
-    image: nginx
     container_name: nginx
-    depends_on:
-     - wordpress
-    build: ./requirements/nginx
-    ports: 
-      - "443:443"
-    restart: always
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    image: nginx
+    # Carga la variable DOMAIN_NAME (del .env)
     env_file:
-      - ../.env
+      - .env
+    # Archivos de WordPress montados como solo lectura
     volumes:
-      - WP_Volume:/var/www/html
-      # [CORRECCIÓN APLICADA AQUÍ] Usar ${PWD} para la ruta absoluta del host
-      - ${PWD}/certs:/etc/ssl/certs:ro 
+      - wordpress_data:/var/www/html:ro
+    # Publica el puerto HTTPS (443) al puerto 443 del host
+    ports:
+      - "443:443"
     networks:
-      - docker-network
+      - inception
+    # Dependencia: NGINX espera a que WordPress esté listo
+    depends_on:
+      - wordpress
+    restart: always
+    # NOTA: Si tienes problemas de permisos (port-binding), usa "8443:443"
 
-# Definición de Volúmenes (Rutas mapeadas a /home/login/data)
-volumes:
-  WP_Volume:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/andefern/data/wordpress
-      o: bind
-
-  DB_Volume:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/andefern/data/mariadb
-      o: bind
-
-# Definición de la Red
 networks:
-  docker-network:
+  inception:
     driver: bridge
 
-# DEFINICIÓN FINAL DE SECRETS
+volumes:
+  # Volumen para datos de MariaDB (bind mount)
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      # *** RUTA CRÍTICA: CAMBIA 'andefern' por tu nombre de usuario (login) ***
+      device: /home/andefern/data/mysql
+
+  # Volumen para archivos de WordPress (bind mount)
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      # *** RUTA CRÍTICA: CAMBIA 'andefern' por tu nombre de usuario (login) ***
+      device: /home/andefern/data/wordpress
+
+# Docker Secrets: archivos montados en /run/secrets/
 secrets:
-  db_user:
-    file: ../secrets/db_user.txt
-  db_password:
-    file: ../secrets/db_password.txt
   db_root_password:
     file: ../secrets/db_root_password.txt
+  db_password:
+    file: ../secrets/db_password.txt
+  wp_admin_password:
+    file: ../secrets/wp_admin_password.txt
+  wp_user_password:
+    file: ../secrets/wp_user_password.txt

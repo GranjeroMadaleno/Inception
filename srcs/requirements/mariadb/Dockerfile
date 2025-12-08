@@ -1,30 +1,28 @@
-FROM debian:12
+# Imagen base de Debian 12 Bookworm (penúltima versión estable)
+# Stable actual: Debian 13 Trixie | Oldstable: Debian 12 Bookworm
+FROM debian:bookworm
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# 1. INSTALAR MARIADB (Crea el usuario 'mysql')
-RUN apt-get update \
-    && apt-get install -y mariadb-server netcat-openbsd \
+# Comandos para instalar MariaDB
+RUN apt-get update && apt-get install -y \
+    mariadb-server \
+    mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. CREAR Y ASIGNAR PERMISOS para /run/mysqld
-RUN mkdir -p /run/mysqld \
-    && chown -R mysql:mysql /run/mysqld
+# Copiar configuración personalizada
+COPY conf/50-server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf
 
-RUN mkdir -p /var/log/mysql \
-    && chown -R mysql:mysql /var/log/mysql
+# Copiar script de inicialización y le damos permisos de ejecucion
+COPY tools/init-db.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-db.sh
 
-COPY ./conf/my.cnf /etc/mysql/my.cnf
-# Copiamos init.sh (el archivo que existe) y lo renombramos a start.sh dentro del contenedor.
-COPY ./conf/init.sh /usr/local/bin/start.sh
-# Copiamos create.sh, ya que también existe en tu carpeta /conf/
-COPY ./conf/create.sh /usr/local/bin/create.sh 
-RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/create.sh
+# Crear directorios necesarios y asignar permisos
+RUN mkdir -p /var/run/mysqld /var/log/mysql && \
+    chown -R mysql:mysql /var/run/mysqld /var/log/mysql /var/lib/mysql && \
+    chmod 755 /var/run/mysqld /var/log/mysql
 
-RUN chown -R mysql:mysql /var/lib/mysql
+# Puerto estandar de MySQL/mariaDB
+EXPOSE 3306
 
-VOLUME /var/lib/mysql
+# Ejecutar script de inicialización
+ENTRYPOINT ["/usr/local/bin/init-db.sh"]
 
-USER mysql
-
-ENTRYPOINT ["/usr/local/bin/start.sh"]

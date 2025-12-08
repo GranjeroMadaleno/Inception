@@ -1,15 +1,28 @@
-FROM debian:12
+# Imagen base de Debian 12 Bookworm (penúltima versión estable)
+FROM debian:bookworm
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Instalar NGINX y OpenSSL
+RUN apt-get update && apt-get install -y \
+    nginx \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y nginx openssl && apt-get clean
+# Copiar configuración de NGINX
+COPY conf/nginx.conf /etc/nginx/nginx.conf
 
-# 1. ELIMINAR CONFIGURACIONES PREDETERMINADAS
-RUN rm -f /etc/nginx/sites-enabled/default
+# Copiar script de inicialización (genera certificados SSL)
+COPY tools/setup-ssl.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/setup-ssl.sh
 
-# 2. COPIAR LA CONFIGURACIÓN DEL USUARIO AL LUGAR PRINCIPAL
-COPY ./conf/nginx.conf /etc/nginx/nginx.conf
+# Crear directorio para certificados SSL
+RUN mkdir -p /etc/nginx/ssl
 
+# Crear directorio para logs
+RUN mkdir -p /var/log/nginx
+
+# Exponer puerto 443 (HTTPS)
 EXPOSE 443
 
-CMD ["nginx", "-c", "/etc/nginx/nginx.conf", "-g", "daemon off;"]
+# Ejecutar script de inicialización
+ENTRYPOINT ["/usr/local/bin/setup-ssl.sh"]
+

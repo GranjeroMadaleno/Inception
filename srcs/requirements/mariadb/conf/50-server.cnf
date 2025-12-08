@@ -1,0 +1,30 @@
+[mysqld]
+
+# Configuración básica
+user                    = mysql
+pid-file                = /var/run/mysqld/mysqld.pid
+socket                  = /var/run/mysqld/mysqld.sock
+port                    = 3306
+basedir                 = /usr
+datadir                 = /var/lib/mysql
+tmpdir                  = /tmp
+
+# Permitir conexiones desde cualquier host (para Docker)
+# Por defecto maria usa 127.0.0.1 nosotros lo cambiamos por 0.0.0.0
+# para que escuches todas las interfaces y se coencte al resto
+bind-address            = 0.0.0.0
+
+# Configuración de red lo ponemos en falso para permitir conexiones de red
+skip-networking         = false
+
+# Configuración de caracteres soporte de unicode y reglas de ordenamiento
+character-set-server    = utf8mb4
+collation-server        = utf8mb4_general_ci
+
+# Configuración de logs (donde guardamos los errores)
+log_error               = /var/log/mysql/error.log
+
+# Configuración de seguridad no intenta resolver nombre de DNS de cliente (por rapidez)
+skip-name-resolve
+
+
