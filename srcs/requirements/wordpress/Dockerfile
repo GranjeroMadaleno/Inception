@@ -1,10 +1,11 @@
-# Imagen base de Debian 12 Bookworm
+# Irudia: Debian 12 "Bookworn"
+
 FROM debian:bookworm
 
-# Configuración para evitar que apt-get espere interacción, previniendo cuelgues.
+# apt-get azkarrago joateko konfigurazioa
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Instalar PHP-FPM y extensiones necesarias para WordPress
+# PHP-FPM instalatu eta WordPress-erako behar diren luzapenak
 RUN apt-get update && apt-get install -y \
     php8.2-fpm \
     php8.2-mysql \
@@ -22,32 +23,32 @@ RUN apt-get update && apt-get install -y \
     mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Descargar WP-CLI (herramienta para gestionar WordPress desde línea de comandos)
+# WP-CLI deskargatu (WordPress komandoekin kudeatzeko tresna)
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
     chmod +x wp-cli.phar && \
     mv wp-cli.phar /usr/local/bin/wp
 
-# Copiar configuración de PHP-FPM (www.conf)
+# PHP-FPM konfigurazioa kopiatu (www.conf)
 COPY conf/www.conf /etc/php/8.2/fpm/pool.d/www.conf
 
-# Copiar script de inicialización
-# NOMBRE DE SCRIPT CORREGIDO: setup-wp.sh
+# Abiarazpen skripta kopiatu
 COPY tools/setup-wp.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/setup-wp.sh
 
-# Crear directorios necesarios y asignar permisos al usuario 'www-data' (usuario de PHP-FPM)
+# Beharrezko direktorioak sortu eta erabiltzaileari baimenak esleitu 'www-data'
+
 RUN mkdir -p /var/www/html && \
     chown -R www-data:www-data /var/www/html
 
-# Crear directorio para el socket de PHP-FPM
+# PHP-FPM socket-erako direktorioa sortu
 RUN mkdir -p /run/php && \
     chown -R www-data:www-data /run/php
 
-# Exponer puerto 9000 (PHP-FPM)
+# 9000 portua ireki edo baimendu (PHP-FPM)
 EXPOSE 9000
 
-# Directorio de trabajo
+# Proiektuaren fitxategia
 WORKDIR /var/www/html
 
-# Ejecutar script de inicialización
+# Hasieratze skripta exekutatu
 ENTRYPOINT ["/usr/local/bin/setup-wp.sh"]

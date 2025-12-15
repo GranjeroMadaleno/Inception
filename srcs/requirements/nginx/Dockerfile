@@ -1,28 +1,36 @@
-# Imagen base de Debian 12 Bookworm (penúltima versión estable)
+# Irudia: Debian 12 "Bookworn"
+
 FROM debian:bookworm
 
-# Instalar NGINX y OpenSSL
+# NGINX eta OpenSSL instalatu
+
 RUN apt-get update && apt-get install -y \
     nginx \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar configuración de NGINX
+# NGINX konfigurazioa kopiatu
+
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 
-# Copiar script de inicialización (genera certificados SSL)
+# Ziurtagiriak sortu eta skripta kopiatu
+
 COPY tools/setup-ssl.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/setup-ssl.sh
 
-# Crear directorio para certificados SSL
+# Hemen sortzen dira SSL ziurtagiriak
+
 RUN mkdir -p /etc/nginx/ssl
 
-# Crear directorio para logs
+# log fitxategia sortu
+
 RUN mkdir -p /var/log/nginx
 
-# Exponer puerto 443 (HTTPS)
+# 443 portua baimendu (HTTPS)
+
 EXPOSE 443
 
-# Ejecutar script de inicialización
+# Hasieratze skripta exekutatu
+
 ENTRYPOINT ["/usr/local/bin/setup-ssl.sh"]
 

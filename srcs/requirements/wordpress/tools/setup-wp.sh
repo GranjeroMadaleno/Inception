@@ -2,63 +2,73 @@
 
 set -e
 
-# Colores para output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
+# Kolorintxis
 
-echo -e "${BLUE}[WordPress] Iniciando configuración...${NC}"
+BLACK='\033[30m'
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+BLUE='\033[34m'
+MAGENTA='\033[35m'
+CYAN='\033[36m'
+WHITE='\033[37m'
 
-# Leer contraseña de DB desde Docker Secrets
+echo -e "${CYAN}[WordPress] Konfigurazioa abiarazten...${WHITE}"
+
+# Secrets karpetatik DB pasahitza irakurri
 if [ -f /run/secrets/db_password ]; then
     MYSQL_PASSWORD=$(cat /run/secrets/db_password)
-    echo -e "${GREEN}[WordPress] Contraseña de DB cargada desde secrets${NC}"
+    echo -e "${GREEN}[WordPress] Secrets fitxategitik DB pasahitza kargatu da${WHITE}"
 else
-    echo "Error: Secret db_password no encontrado"
+    echo "Error: Secrets db_password ezin izan da aurkitu X_X "
     exit 1
 fi
 
-# Leer contraseñas de WordPress desde Docker Secrets
+# Secrets karpetatik WordPress pasahitza irakurri
 if [ -f /run/secrets/wp_admin_password ]; then
     WP_ADMIN_PASSWORD=$(cat /run/secrets/wp_admin_password)
-    echo -e "${GREEN}[WordPress] Contraseña de admin cargada desde secrets${NC}"
+    echo -e "${GREEN}[WordPress] Secrets fitxategitik administratzaile pasahitza kargatu da${WHITE}"
 else
-    echo "Error: Secret wp_admin_password no encontrado"
+    echo "Error: Secret wp_admin_password ezin izan da aurkitu X_X"
     exit 1
 fi
 
 if [ -f /run/secrets/wp_user_password ]; then
     WP_USER_PASSWORD=$(cat /run/secrets/wp_user_password)
-    echo -e "${GREEN}[WordPress] Contraseña de usuario cargada desde secrets${NC}"
+    echo -e "${GREEN}[WordPress] Secrets fitxategitik erabiltzaile pasahitza kargatu da${WHITE}"
 else
-    echo "Error: Secret wp_user_password no encontrado"
+    echo "Error: Secret wp_user_password ezin izan da aurkitu X_X"
     exit 1
 fi
 
-echo -e "${GREEN}[WordPress] Configuración de usuarios cargada desde .env y secrets${NC}"
+echo -e "${GREEN}[WordPress] .env eta secrets fitxategietatik kargatutako erabiltzaileen konfigurazioa${WHITE}"
 
-# Esperar a que MariaDB esté listo
-echo -e "${BLUE}[WordPress] Esperando a que MariaDB esté disponible...${NC}"
+# Itxoin MariaDB prest egon arte
+
+echo -e "${CYAN}[WordPress] MariaDB erabilgarri egon arte itzoiten...${WHITE}"
 until mysql -h mariadb -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "SELECT 1" &>/dev/null; do
-    echo -e "${YELLOW}[WordPress] MariaDB no está listo aún... esperando${NC}"
+    echo -e "${MAGENTA}[WordPress] MariaDB oraindik ez dago prest... itzoiten${WHITE}"
     sleep 3
 done
-echo -e "${GREEN}[WordPress] MariaDB está listo${NC}"
+echo -e "${GREEN}[WordPress] MariaDB erabilgarri egon arte itzoiten${WHITE}"
 
-# Cambiar al directorio de WordPress
+# WordPress direktorian sartu
+
 cd /var/www/html
 
-# Verificar si WordPress ya está instalado
+# Egiaztatu WordPress instalatuta dagoen ala ez
+
 if [ ! -f wp-config.php ]; then
-    echo -e "${BLUE}[WordPress] Descargando WordPress...${NC}"
+    echo -e "${CYAN}[WordPress] WordPress deskargatzen...${WHITE}"
     
-    # Descargar WordPress
+    # WordPress deskargatu
+
     wp core download --allow-root
     
-    echo -e "${BLUE}[WordPress] Creando wp-config.php...${NC}"
+    echo -e "${CYAN}[WordPress] wp-config.php sortzen...${WHITE}"
     
-    # Crear configuración de WordPress
+    # WordPress konfigurazioa sortu
+
     wp config create \
         --dbname="${MYSQL_DATABASE}" \
         --dbuser="${MYSQL_USER}" \
@@ -66,9 +76,10 @@ if [ ! -f wp-config.php ]; then
         --dbhost=mariadb \
         --allow-root
     
-    echo -e "${BLUE}[WordPress] Instalando WordPress...${NC}"
+    echo -e "${CYAN}[WordPress] WordPress instalatzen...${WHITE}"
     
-    # Instalar WordPress
+    # WordPress instalatu
+
     wp core install \
         --url="${WP_URL}" \
         --title="${WP_TITLE}" \
@@ -77,9 +88,10 @@ if [ ! -f wp-config.php ]; then
         --admin_email="${WP_ADMIN_EMAIL}" \
         --allow-root
     
-    echo -e "${BLUE}[WordPress] Creando segundo usuario...${NC}"
+    echo -e "${CYAN}[WordPress] Bigarren erabiltzailea sortzen...${WHITE}"
     
-    # Crear segundo usuario (requisito del subject)
+    # Bigarren erabiltzailea sortu
+
     wp user create \
         "${WP_USER}" \
         "${WP_USER_EMAIL}" \
@@ -87,15 +99,17 @@ if [ ! -f wp-config.php ]; then
         --user_pass="${WP_USER_PASSWORD}" \
         --allow-root
     
-    echo -e "${GREEN}[WordPress] WordPress instalado correctamente${NC}"
+    echo -e "${GREEN}[WordPress] WordPress instalazioa ondo doa${WHITE}"
 else
-    echo -e "${GREEN}[WordPress] WordPress ya está instalado${NC}"
+    echo -e "${GREEN}[WordPress] WordPress instalatu egin da${WHITE}"
 fi
 
-# Cambiar permisos
+# Baimenak eraldatu
+
 chown -R www-data:www-data /var/www/html
 
-echo -e "${GREEN}[WordPress] Iniciando PHP-FPM...${NC}"
+echo -e "${GREEN}[WordPress] PHP-FPM abiarazten...${WHITE}"
 
-# Iniciar PHP-FPM en primer plano (PID 1)
+# PHP-FPM lehenengo planoan abiarazi (PID 1)
+
 exec /usr/sbin/php-fpm8.2 -F

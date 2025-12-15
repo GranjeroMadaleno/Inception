@@ -1,6 +1,7 @@
 [mysqld]
 
-# Configuración básica
+# KONFIGURAZIO FITXATEGIA
+
 user                    = mysql
 pid-file                = /var/run/mysqld/mysqld.pid
 socket                  = /var/run/mysqld/mysqld.sock
@@ -9,22 +10,27 @@ basedir                 = /usr
 datadir                 = /var/lib/mysql
 tmpdir                  = /tmp
 
-# Permitir conexiones desde cualquier host (para Docker)
-# Por defecto maria usa 127.0.0.1 nosotros lo cambiamos por 0.0.0.0
-# para que escuches todas las interfaces y se coencte al resto
+# Edozein hostetako konexioak baimentzen ditu (Docker)
+# Mariadb-k normalean 127.0.0.1 portua erabiltzen du, 0.0.0.0 ra aldatu egin dugu
+# Interface guztiak entzun eta konektatu ahal izateko
+
 bind-address            = 0.0.0.0
 
-# Configuración de red lo ponemos en falso para permitir conexiones de red
+# Sare konexioak baimentzeko "false" modura aldatu behar da
+
 skip-networking         = false
 
-# Configuración de caracteres soporte de unicode y reglas de ordenamiento
+# Unikode karaktereak eta sailkatze arauak konfiguratu
+
 character-set-server    = utf8mb4
 collation-server        = utf8mb4_general_ci
 
-# Configuración de logs (donde guardamos los errores)
+# Akats edo erroreen log konfigurazioa
+
 log_error               = /var/log/mysql/error.log
 
-# Configuración de seguridad no intenta resolver nombre de DNS de cliente (por rapidez)
+# Bezeroaren DNS-aren izena irakurtzea sahiesten du (abiadura azkartzeko da) 
+
 skip-name-resolve
 
 

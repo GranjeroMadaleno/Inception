@@ -2,33 +2,43 @@
 
 set -e
 
-# Colores para output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Kolorintxis
 
-echo -e "${BLUE}[NGINX] Iniciando configuración...${NC}"
+BLACK='\033[30m'
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+BLUE='\033[34m'
+MAGENTA='\033[35m'
+CYAN='\033[36m'
+WHITE='\033[37m'
 
-# Verificar si los certificados SSL ya existen
+echo -e "${CYAN}[NGINX] Konfigurazioa abiarazten...${WHITE}"
+
+# SSL ziurtagiriak lehendik badauden egiaztatzea
+
 if [ ! -f /etc/nginx/ssl/nginx.crt ] || [ ! -f /etc/nginx/ssl/nginx.key ]; then
-    echo -e "${BLUE}[NGINX] Generando certificados SSL autofirmados...${NC}"
+    echo -e "${CYAN}[NGINX] SSL ziurtagiri autofirmatuak sortzen...${WHITE}"
     
-    # Generar certificado SSL autofirmado
+    # Sortu SSL ziurtagiri autofirmatua
+
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /etc/nginx/ssl/nginx.key \
         -out /etc/nginx/ssl/nginx.crt \
         -subj "/C=ES/ST=Madrid/L=Madrid/O=42/OU=Student/CN=${DOMAIN_NAME}"
     
-    # Establecer permisos
+    # Baimenak ezarri
+
     chmod 600 /etc/nginx/ssl/nginx.key
     chmod 644 /etc/nginx/ssl/nginx.crt
     
-    echo -e "${GREEN}[NGINX] Certificados SSL generados correctamente${NC}"
+    echo -e "${GREEN}[NGINX] SSL ziurtagiriak behar bezala sortu egin dira${WHITE}"
 else
-    echo -e "${GREEN}[NGINX] Certificados SSL ya existen${NC}"
+    echo -e "${GREEN}[NGINX] SSL ziurtagiriak dagoeneko existitzen dira${WHITE}"
 fi
 
-echo -e "${GREEN}[NGINX] Iniciando NGINX...${NC}"
+echo -e "${GREEN}[NGINX] NGINX abiarazten...${WHITE}"
 
-# Iniciar NGINX en primer plano (PID 1)
+# NGINX lehenengo planoan abiarazi (PID 1)
+
 exec nginx -g 'daemon off;'

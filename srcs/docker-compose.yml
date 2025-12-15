@@ -1,4 +1,5 @@
-# Docker Compose para orquestar los servicios de Inception: Nginx, WordPress y MariaDB.
+# Docker compose: Nginx, WordPress eta MariaDB haien artean lotzeko
+
 version: '3.8'
 
 services:
@@ -8,14 +9,20 @@ services:
       context: ./requirements/mariadb
       dockerfile: Dockerfile
     image: mariadb
-    # Carga variables de entorno NO sensibles (nombres de BD, usuarios, etc.)
+
+    # Sentikorrak ez diren ingurune aldagaiak kargatzen ditu (DB izenak, erabiltzaileak...) 
+    
     env_file:
       - .env
-    # Monta contraseñas desde archivos (Docker Secrets, más seguro)
+
+    # Fitxategietatik pasahitzak eraikitzen ditu (Secrets)
+
     secrets:
       - db_root_password
       - db_password
-    # Monta el volumen persistente
+
+    # Bolumen iraunkorra muntatzen du
+
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
@@ -28,20 +35,28 @@ services:
       context: ./requirements/wordpress
       dockerfile: Dockerfile
     image: wordpress
-    # Carga variables de entorno NO sensibles (URLs, DOMAIN_NAME, etc.)
+
+    # Sentikorrak ez diren ingurune aldagaiak kargatzen ditu (URL-ak, DOMAIN_NAME...)
+    
     env_file:
       - .env
-    # Contraseñas necesarias para la instalación de WP
+
+    # WordPress instalatzeko beharrezko pasahitzak
+
     secrets:
       - db_password
       - wp_admin_password
       - wp_user_password
-    # Monta el volumen para los archivos de WordPress
+
+    # WordPress fitxategientzako bolumena muntatzen du
+
     volumes:
       - wordpress_data:/var/www/html
     networks:
       - inception
-    # Dependencia: WordPress espera a que MariaDB esté listo
+
+    # WordPress, MariaDB prest egon arte itxaroten ari da
+
     depends_on:
       - mariadb
     restart: always
@@ -52,47 +67,55 @@ services:
       context: ./requirements/nginx
       dockerfile: Dockerfile
     image: nginx
-    # Carga la variable DOMAIN_NAME (del .env)
+
+    # DOMAIN_NAME aldagaia kargatzen du (.env) 
+
     env_file:
       - .env
-    # Archivos de WordPress montados como solo lectura
+
+    # WordPress fitxategiak irakurtzeko soilik muntatu dira
+
     volumes:
       - wordpress_data:/var/www/html:ro
-    # Publica el puerto HTTPS (443) al puerto 443 del host
+
+    # 443 ataka publikatzen du HTTPS ---> host
+
     ports:
       - "443:443"
     networks:
       - inception
-    # Dependencia: NGINX espera a que WordPress esté listo
+
+    # Nginx, WordPress prest egon arte itxaroten ari da
+
     depends_on:
       - wordpress
     restart: always
-    # NOTA: Si tienes problemas de permisos (port-binding), usa "8443:443"
 
 networks:
   inception:
     driver: bridge
 
 volumes:
-  # Volumen para datos de MariaDB (bind mount)
+
+  # Mariadb datuen bolumena
+
   mariadb_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      # *** RUTA CRÍTICA: CAMBIA 'andefern' por tu nombre de usuario (login) ***
       device: /home/andefern/data/mysql
 
-  # Volumen para archivos de WordPress (bind mount)
+  # WordPress datuen bolumena
   wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      # *** RUTA CRÍTICA: CAMBIA 'andefern' por tu nombre de usuario (login) ***
       device: /home/andefern/data/wordpress
 
-# Docker Secrets: archivos montados en /run/secrets/
+# /run/secrets/-en muntatutako fitxategiak
+
 secrets:
   db_root_password:
     file: ../secrets/db_root_password.txt
